@@ -289,6 +289,12 @@ pub struct Settings<T> {
     #[schema(value_type = Option<PrefixSearchSettings>, example = json!("Hemlo"))]
     pub prefix_search: Setting<PrefixSearchSettings>,
 
+    /// Function to execute after an update
+    #[serde(default, skip_serializing_if = "Setting::is_not_set")]
+    #[deserr(default, error = DeserrJsonError<InvalidSettingsexecuteAfterUpdate>)]
+    #[schema(value_type = Option<String>, example = json!("doc.likes += 1"))]
+    pub execute_after_update: Setting<String>,
+
     #[serde(skip)]
     #[deserr(skip)]
     pub _kind: PhantomData<T>,
@@ -354,6 +360,7 @@ impl Settings<Checked> {
             localized_attributes: Setting::Reset,
             facet_search: Setting::Reset,
             prefix_search: Setting::Reset,
+            execute_after_update: Setting::Reset,
             _kind: PhantomData,
         }
     }
@@ -380,6 +387,7 @@ impl Settings<Checked> {
             localized_attributes: localized_attributes_rules,
             facet_search,
             prefix_search,
+            execute_after_update,
             _kind,
         } = self;
 
@@ -404,6 +412,7 @@ impl Settings<Checked> {
             localized_attributes: localized_attributes_rules,
             facet_search,
             prefix_search,
+            execute_after_update,
             _kind: PhantomData,
         }
     }
@@ -454,6 +463,7 @@ impl Settings<Unchecked> {
             localized_attributes: self.localized_attributes,
             facet_search: self.facet_search,
             prefix_search: self.prefix_search,
+            execute_after_update: self.execute_after_update,
             _kind: PhantomData,
         }
     }
@@ -530,6 +540,10 @@ impl Settings<Unchecked> {
             },
             prefix_search: other.prefix_search.or(self.prefix_search),
             facet_search: other.facet_search.or(self.facet_search),
+            execute_after_update: other
+                .execute_after_update
+                .clone()
+                .or(self.execute_after_update.clone()),
             _kind: PhantomData,
         }
     }
@@ -568,6 +582,7 @@ pub fn apply_settings_to_builder(
         localized_attributes: localized_attributes_rules,
         facet_search,
         prefix_search,
+        execute_after_update,
         _kind,
     } = settings;
 
@@ -772,6 +787,14 @@ pub fn apply_settings_to_builder(
         Setting::Reset => builder.reset_facet_search(),
         Setting::NotSet => (),
     }
+
+    match execute_after_update {
+        Setting::Set(execute_after_update) => {
+            builder.set_execute_after_update(execute_after_update.clone())
+        }
+        Setting::Reset => builder.reset_execute_after_update(),
+        Setting::NotSet => (),
+    }
 }
 
 pub enum SecretPolicy {
@@ -867,14 +890,11 @@ pub fn settings(
         })
         .collect();
     let embedders = Setting::Set(embedders);
-
     let search_cutoff_ms = index.search_cutoff(rtxn)?;
-
     let localized_attributes_rules = index.localized_attributes_rules(rtxn)?;
-
     let prefix_search = index.prefix_search(rtxn)?.map(PrefixSearchSettings::from);
-
     let facet_search = index.facet_search(rtxn)?;
+    let execute_after_update = index.execute_after_update(rtxn)?;
 
     let mut settings = Settings {
         displayed_attributes: match displayed_attributes {
@@ -914,6 +934,10 @@ pub fn settings(
         },
         prefix_search: Setting::Set(prefix_search.unwrap_or_default()),
         facet_search: Setting::Set(facet_search),
+        execute_after_update: match execute_after_update {
+            Some(function) => Setting::Set(function.to_string()),
+            None => Setting::NotSet,
+        },
         _kind: PhantomData,
     };
 
@@ -1141,6 +1165,7 @@ pub(crate) mod test {
             search_cutoff_ms: Setting::NotSet,
             facet_search: Setting::NotSet,
             prefix_search: Setting::NotSet,
+            execute_after_update: Setting::NotSet,
             _kind: PhantomData::<Unchecked>,
         };
 
@@ -1172,6 +1197,7 @@ pub(crate) mod test {
             search_cutoff_ms: Setting::NotSet,
             facet_search: Setting::NotSet,
             prefix_search: Setting::NotSet,
+            execute_after_update: Setting::NotSet,
             _kind: PhantomData::<Unchecked>,
         };
 
