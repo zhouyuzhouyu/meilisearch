@@ -9,6 +9,7 @@ use roaring::bitmap::RoaringBitmap;
 pub use self::facet::{FacetDistribution, Filter, OrderBy, DEFAULT_VALUES_PER_FACET};
 pub use self::new::matches::{FormatOptions, MatchBounds, MatcherBuilder, MatchingWords};
 use self::new::{execute_vector_search, PartialSearchResult, VectorStoreStats};
+use crate::documents::GeoSortParameter;
 use crate::filterable_attributes_rules::{filtered_matching_patterns, matching_features};
 use crate::index::MatchingStrategy;
 use crate::score_details::{ScoreDetails, ScoringStrategy};
@@ -47,11 +48,13 @@ pub struct Search<'a> {
     sort_criteria: Option<Vec<AscDesc>>,
     distinct: Option<String>,
     searchable_attributes: Option<&'a [String]>,
-    geo_param: new::GeoSortParameter,
+    geo_param: GeoSortParameter,
     terms_matching_strategy: TermsMatchingStrategy,
     scoring_strategy: ScoringStrategy,
     words_limit: usize,
+    retrieve_vectors: bool,
     exhaustive_number_hits: bool,
+    max_total_hits: Option<usize>,
     rtxn: &'a heed::RoTxn<'a>,
     index: &'a Index,
     semantic: Option<SemanticSearch>,
@@ -70,10 +73,12 @@ impl<'a> Search<'a> {
             sort_criteria: None,
             distinct: None,
             searchable_attributes: None,
-            geo_param: new::GeoSortParameter::default(),
+            geo_param: GeoSortParameter::default(),
             terms_matching_strategy: TermsMatchingStrategy::default(),
             scoring_strategy: Default::default(),
+            retrieve_vectors: false,
             exhaustive_number_hits: false,
+            max_total_hits: None,
             words_limit: 10,
             rtxn,
             index,
@@ -147,7 +152,7 @@ impl<'a> Search<'a> {
     }
 
     #[cfg(test)]
-    pub fn geo_sort_strategy(&mut self, strategy: new::GeoSortStrategy) -> &mut Search<'a> {
+    pub fn geo_sort_strategy(&mut self, strategy: crate::GeoSortStrategy) -> &mut Search<'a> {
         self.geo_param.strategy = strategy;
         self
     }
@@ -158,10 +163,20 @@ impl<'a> Search<'a> {
         self
     }
 
+    pub fn retrieve_vectors(&mut self, retrieve_vectors: bool) -> &mut Search<'a> {
+        self.retrieve_vectors = retrieve_vectors;
+        self
+    }
+
     /// Forces the search to exhaustively compute the number of candidates,
     /// this will increase the search time but allows finite pagination.
     pub fn exhaustive_number_hits(&mut self, exhaustive_number_hits: bool) -> &mut Search<'a> {
         self.exhaustive_number_hits = exhaustive_number_hits;
+        self
+    }
+
+    pub fn max_total_hits(&mut self, max_total_hits: Option<usize>) -> &mut Search<'a> {
+        self.max_total_hits = max_total_hits;
         self
     }
 
@@ -225,6 +240,7 @@ impl<'a> Search<'a> {
         }
 
         let universe = filtered_universe(ctx.index, ctx.txn, &self.filter)?;
+        let mut query_vector = None;
         let PartialSearchResult {
             located_query_terms,
             candidates,
@@ -239,28 +255,36 @@ impl<'a> Search<'a> {
                 embedder,
                 quantized,
                 media: _,
-            }) => execute_vector_search(
-                &mut ctx,
-                vector,
-                self.scoring_strategy,
-                universe,
-                &self.sort_criteria,
-                &self.distinct,
-                self.geo_param,
-                self.offset,
-                self.limit,
-                embedder_name,
-                embedder,
-                *quantized,
-                self.time_budget.clone(),
-                self.ranking_score_threshold,
-            )?,
+            }) => {
+                if self.retrieve_vectors {
+                    query_vector = Some(vector.clone());
+                }
+                execute_vector_search(
+                    &mut ctx,
+                    vector,
+                    self.scoring_strategy,
+                    self.exhaustive_number_hits,
+                    self.max_total_hits,
+                    universe,
+                    &self.sort_criteria,
+                    &self.distinct,
+                    self.geo_param,
+                    self.offset,
+                    self.limit,
+                    embedder_name,
+                    embedder,
+                    *quantized,
+                    self.time_budget.clone(),
+                    self.ranking_score_threshold,
+                )?
+            }
             _ => execute_search(
                 &mut ctx,
                 self.query.as_deref(),
                 self.terms_matching_strategy,
                 self.scoring_strategy,
                 self.exhaustive_number_hits,
+                self.max_total_hits,
                 universe,
                 &self.sort_criteria,
                 &self.distinct,
@@ -295,6 +319,7 @@ impl<'a> Search<'a> {
             documents_ids,
             degraded,
             used_negative_operator,
+            query_vector,
         })
     }
 }
@@ -313,7 +338,9 @@ impl fmt::Debug for Search<'_> {
             terms_matching_strategy,
             scoring_strategy,
             words_limit,
+            retrieve_vectors,
             exhaustive_number_hits,
+            max_total_hits,
             rtxn: _,
             index: _,
             semantic,
@@ -332,7 +359,9 @@ impl fmt::Debug for Search<'_> {
             .field("searchable_attributes", searchable_attributes)
             .field("terms_matching_strategy", terms_matching_strategy)
             .field("scoring_strategy", scoring_strategy)
+            .field("retrieve_vectors", retrieve_vectors)
             .field("exhaustive_number_hits", exhaustive_number_hits)
+            .field("max_total_hits", max_total_hits)
             .field("words_limit", words_limit)
             .field(
                 "semantic.embedder_name",
@@ -353,6 +382,7 @@ pub struct SearchResult {
     pub document_scores: Vec<Vec<ScoreDetails>>,
     pub degraded: bool,
     pub used_negative_operator: bool,
+    pub query_vector: Option<Embedding>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -117,10 +117,18 @@ impl EmbeddingStatus {
         Default::default()
     }
 
+    /// Create a new `EmbeddingStatus` that assumes that any `user_provided` docid is also skipping regenerate.
+    ///
+    /// Used for migration from v1.15 and earlier DBs.
+    pub(crate) fn from_user_provided(user_provided: RoaringBitmap) -> Self {
+        Self { user_provided, skip_regenerate_different_from_user_provided: Default::default() }
+    }
+
     /// Whether the document contains user-provided vectors for that embedder.
     pub fn is_user_provided(&self, docid: DocumentId) -> bool {
         self.user_provided.contains(docid)
     }
+
     /// Whether vectors should be regenerated for that document and that embedder.
     pub fn must_regenerate(&self, docid: DocumentId) -> bool {
         let invert = self.skip_regenerate_different_from_user_provided.contains(docid);

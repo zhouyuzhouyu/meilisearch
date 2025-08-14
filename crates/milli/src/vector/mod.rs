@@ -556,9 +556,6 @@ impl ArroyWrapper {
             for reader in self.readers(rtxn, self.quantized_db()) {
                 let reader = reader?;
                 let documents = reader.item_ids();
-                if documents.is_empty() {
-                    break;
-                }
                 stats.documents |= documents;
                 stats.number_of_embeddings += documents.len();
             }
@@ -566,9 +563,6 @@ impl ArroyWrapper {
             for reader in self.readers(rtxn, self.angular_db()) {
                 let reader = reader?;
                 let documents = reader.item_ids();
-                if documents.is_empty() {
-                    break;
-                }
                 stats.documents |= documents;
                 stats.number_of_embeddings += documents.len();
             }
@@ -837,6 +831,25 @@ impl EmbedderOptions {
                     embedder_options.indexing_fragments.get(name)
                 } else {
                     None
+                }
+            }
+        }
+    }
+
+    pub fn has_fragments(&self) -> bool {
+        match &self {
+            EmbedderOptions::HuggingFace(_)
+            | EmbedderOptions::OpenAi(_)
+            | EmbedderOptions::Ollama(_)
+            | EmbedderOptions::UserProvided(_) => false,
+            EmbedderOptions::Rest(embedder_options) => {
+                !embedder_options.indexing_fragments.is_empty()
+            }
+            EmbedderOptions::Composite(embedder_options) => {
+                if let SubEmbedderOptions::Rest(embedder_options) = &embedder_options.index {
+                    !embedder_options.indexing_fragments.is_empty()
+                } else {
+                    false
                 }
             }
         }
