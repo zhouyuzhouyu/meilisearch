@@ -589,7 +589,7 @@ source = "git+https://github.com/meilisearch/bbqueue#cbb87cc707b5af415ef203bdaf2
 
 [[package]]
 name = "benchmarks"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "anyhow",
  "bumpalo",
@@ -779,7 +779,7 @@ dependencies = [
 
 [[package]]
 name = "build-info"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "anyhow",
  "time",
@@ -1812,7 +1812,7 @@ dependencies = [
 
 [[package]]
 name = "dump"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "anyhow",
  "big_s",
@@ -2054,7 +2054,7 @@ checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
 name = "file-store"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "tempfile",
  "thiserror 2.0.12",
@@ -2076,7 +2076,7 @@ dependencies = [
 
 [[package]]
 name = "filter-parser"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "insta",
  "levenshtein_automata",
@@ -2098,7 +2098,7 @@ dependencies = [
 
 [[package]]
 name = "flatten-serde-json"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "criterion",
  "serde_json",
@@ -2255,7 +2255,7 @@ dependencies = [
 
 [[package]]
 name = "fuzzers"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "arbitrary",
  "bumpalo",
@@ -3173,7 +3173,7 @@ dependencies = [
 
 [[package]]
 name = "index-scheduler"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "anyhow",
  "backoff",
@@ -3450,7 +3450,7 @@ dependencies = [
 
 [[package]]
 name = "json-depth-checker"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "criterion",
  "serde_json",
@@ -3944,7 +3944,7 @@ checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "meili-snap"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "insta",
  "md5",
@@ -3955,7 +3955,7 @@ dependencies = [
 
 [[package]]
 name = "meilisearch"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "actix-cors",
  "actix-http",
@@ -3965,6 +3965,7 @@ dependencies = [
  "actix-web-lab",
  "anyhow",
  "async-openai",
+ "backoff",
  "brotli",
  "bstr",
  "build-info",
@@ -4051,7 +4052,7 @@ dependencies = [
 
 [[package]]
 name = "meilisearch-auth"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "base64 0.22.1",
  "enum-iterator",
@@ -4070,7 +4071,7 @@ dependencies = [
 
 [[package]]
 name = "meilisearch-types"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -4105,7 +4106,7 @@ dependencies = [
 
 [[package]]
 name = "meilitool"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -4139,7 +4140,7 @@ dependencies = [
 
 [[package]]
 name = "milli"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "allocator-api2 0.3.0",
  "arroy",
@@ -4212,6 +4213,7 @@ dependencies = [
  "time",
  "tokenizers",
  "tracing",
+ "twox-hash",
  "ureq",
  "url",
  "utoipa",
@@ -4707,7 +4709,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "permissive-json-pointer"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "big_s",
  "serde_json",
@@ -6718,6 +6720,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
+name = "twox-hash"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b907da542cbced5261bd3256de1b3a1bf340a3d37f93425a07362a1d687de56"
+
+[[package]]
 name = "typeid"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7546,7 +7554,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "1.17.1"
+version = "1.18.0"
 dependencies = [
  "anyhow",
  "build-info",

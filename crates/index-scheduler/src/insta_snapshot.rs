@@ -230,6 +230,7 @@ pub fn snapshot_task(task: &Task) -> String {
         details,
         status,
         kind,
+        network,
     } = task;
     snap.push('{');
     snap.push_str(&format!("uid: {uid}, "));
@@ -247,6 +248,9 @@ pub fn snapshot_task(task: &Task) -> String {
         snap.push_str(&format!("details: {}, ", &snapshot_details(details)));
     }
     snap.push_str(&format!("kind: {kind:?}"));
+    if let Some(network) = network {
+        snap.push_str(&format!("network: {network:?}, "))
+    }
 
     snap.push('}');
     snap
@@ -274,8 +278,8 @@ fn snapshot_details(d: &Details) -> String {
         Details::SettingsUpdate { settings } => {
             format!("{{ settings: {settings:?} }}")
         }
-        Details::IndexInfo { primary_key } => {
-            format!("{{ primary_key: {primary_key:?} }}")
+        Details::IndexInfo { primary_key, new_index_uid, old_index_uid } => {
+            format!("{{ primary_key: {primary_key:?}, old_new_uid: {old_index_uid:?}, new_index_uid: {new_index_uid:?} }}")
         }
         Details::DocumentDeletion {
             provided_ids: received_document_ids,

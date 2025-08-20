@@ -42,6 +42,9 @@ pub struct Task {
 
     pub status: Status,
     pub kind: KindWithContent,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub network: Option<TaskNetwork>,
 }
 
 impl Task {
@@ -140,6 +143,7 @@ pub enum KindWithContent {
     IndexUpdate {
         index_uid: String,
         primary_key: Option<String>,
+        new_index_uid: Option<String>,
     },
     IndexSwap {
         swaps: Vec<IndexSwap>,
@@ -172,6 +176,8 @@ pub enum KindWithContent {
 #[serde(rename_all = "camelCase")]
 pub struct IndexSwap {
     pub indexes: (String, String),
+    #[serde(default)]
+    pub rename: bool,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -220,8 +226,14 @@ impl KindWithContent {
             | DocumentClear { index_uid }
             | SettingsUpdate { index_uid, .. }
             | IndexCreation { index_uid, .. }
-            | IndexUpdate { index_uid, .. }
             | IndexDeletion { index_uid } => vec![index_uid],
+            IndexUpdate { index_uid, new_index_uid, .. } => {
+                let mut indexes = vec![index_uid.as_str()];
+                if let Some(new_uid) = new_index_uid {
+                    indexes.push(new_uid.as_str());
+                }
+                indexes
+            }
             IndexSwap { swaps } => {
                 let mut indexes = HashSet::<&str>::default();
                 for swap in swaps {
@@ -270,9 +282,17 @@ impl KindWithContent {
             KindWithContent::SettingsUpdate { new_settings, .. } => {
                 Some(Details::SettingsUpdate { settings: new_settings.clone() })
             }
-            KindWithContent::IndexCreation { primary_key, .. }
-            | KindWithContent::IndexUpdate { primary_key, .. } => {
-                Some(Details::IndexInfo { primary_key: primary_key.clone() })
+            KindWithContent::IndexCreation { primary_key, .. } => Some(Details::IndexInfo {
+                primary_key: primary_key.clone(),
+                old_index_uid: None,
+                new_index_uid: None,
+            }),
+            KindWithContent::IndexUpdate { primary_key, new_index_uid, index_uid } => {
+                Some(Details::IndexInfo {
+                    primary_key: primary_key.clone(),
+                    old_index_uid: new_index_uid.as_ref().map(|_| index_uid.clone()),
+                    new_index_uid: new_index_uid.clone(),
+                })
             }
             KindWithContent::IndexSwap { swaps } => {
                 Some(Details::IndexSwap { swaps: swaps.clone() })
@@ -344,9 +364,17 @@ impl KindWithContent {
                 Some(Details::SettingsUpdate { settings: new_settings.clone() })
             }
             KindWithContent::IndexDeletion { .. } => None,
-            KindWithContent::IndexCreation { primary_key, .. }
-            | KindWithContent::IndexUpdate { primary_key, .. } => {
-                Some(Details::IndexInfo { primary_key: primary_key.clone() })
+            KindWithContent::IndexCreation { primary_key, .. } => Some(Details::IndexInfo {
+                primary_key: primary_key.clone(),
+                old_index_uid: None,
+                new_index_uid: None,
+            }),
+            KindWithContent::IndexUpdate { primary_key, new_index_uid, index_uid } => {
+                Some(Details::IndexInfo {
+                    primary_key: primary_key.clone(),
+                    old_index_uid: new_index_uid.as_ref().map(|_| index_uid.clone()),
+                    new_index_uid: new_index_uid.clone(),
+                })
             }
             KindWithContent::IndexSwap { .. } => {
                 todo!()
@@ -400,11 +428,17 @@ impl From<&KindWithContent> for Option<Details> {
                 Some(Details::SettingsUpdate { settings: new_settings.clone() })
             }
             KindWithContent::IndexDeletion { .. } => None,
-            KindWithContent::IndexCreation { primary_key, .. } => {
-                Some(Details::IndexInfo { primary_key: primary_key.clone() })
-            }
-            KindWithContent::IndexUpdate { primary_key, .. } => {
-                Some(Details::IndexInfo { primary_key: primary_key.clone() })
+            KindWithContent::IndexCreation { primary_key, .. } => Some(Details::IndexInfo {
+                primary_key: primary_key.clone(),
+                new_index_uid: None,
+                old_index_uid: None,
+            }),
+            KindWithContent::IndexUpdate { primary_key, new_index_uid, index_uid } => {
+                Some(Details::IndexInfo {
+                    primary_key: primary_key.clone(),
+                    old_index_uid: new_index_uid.as_ref().map(|_| index_uid.clone()),
+                    new_index_uid: new_index_uid.clone(),
+                })
             }
             KindWithContent::IndexSwap { .. } => None,
             KindWithContent::TaskCancelation { query, tasks } => Some(Details::TaskCancelation {
@@ -657,6 +691,8 @@ pub enum Details {
     },
     IndexInfo {
         primary_key: Option<String>,
+        new_index_uid: Option<String>,
+        old_index_uid: Option<String>,
     },
     DocumentDeletion {
         provided_ids: usize,
@@ -702,6 +738,36 @@ pub enum Details {
         from: (u32, u32, u32),
         to: (u32, u32, u32),
     },
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(untagged, rename_all = "camelCase")]
+pub enum TaskNetwork {
+    Origin { origin: Origin },
+    Remotes { remote_tasks: BTreeMap<String, RemoteTask> },
+}
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Origin {
+    pub remote_name: String,
+    pub task_uid: usize,
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteTask {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    task_uid: Option<TaskId>,
+    error: Option<ResponseError>,
+}
+
+impl From<Result<TaskId, ResponseError>> for RemoteTask {
+    fn from(res: Result<TaskId, ResponseError>) -> RemoteTask {
+        match res {
+            Ok(task_uid) => RemoteTask { task_uid: Some(task_uid), error: None },
+            Err(err) => RemoteTask { task_uid: None, error: Some(err) },
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, ToSchema)]

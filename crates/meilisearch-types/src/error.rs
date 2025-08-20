@@ -212,7 +212,6 @@ ImmutableApiKeyKey                             , InvalidRequest       , BAD_REQU
 ImmutableApiKeyUid                             , InvalidRequest       , BAD_REQUEST;
 ImmutableApiKeyUpdatedAt                       , InvalidRequest       , BAD_REQUEST;
 ImmutableIndexCreatedAt                        , InvalidRequest       , BAD_REQUEST;
-ImmutableIndexUid                              , InvalidRequest       , BAD_REQUEST;
 ImmutableIndexUpdatedAt                        , InvalidRequest       , BAD_REQUEST;
 IndexAlreadyExists                             , InvalidRequest       , CONFLICT ;
 IndexCreationFailed                            , Internal             , INTERNAL_SERVER_ERROR;
@@ -236,9 +235,11 @@ InvalidDocumentFields                          , InvalidRequest       , BAD_REQU
 InvalidDocumentRetrieveVectors                 , InvalidRequest       , BAD_REQUEST ;
 MissingDocumentFilter                          , InvalidRequest       , BAD_REQUEST ;
 MissingDocumentEditionFunction                 , InvalidRequest       , BAD_REQUEST ;
+InconsistentDocumentChangeHeaders              , InvalidRequest       , BAD_REQUEST ;
 InvalidDocumentFilter                          , InvalidRequest       , BAD_REQUEST ;
 InvalidDocumentSort                            , InvalidRequest       , BAD_REQUEST ;
 InvalidDocumentGeoField                        , InvalidRequest       , BAD_REQUEST ;
+InvalidHeaderValue                             , InvalidRequest       , BAD_REQUEST ;
 InvalidVectorDimensions                        , InvalidRequest       , BAD_REQUEST ;
 InvalidVectorsType                             , InvalidRequest       , BAD_REQUEST ;
 InvalidDocumentId                              , InvalidRequest       , BAD_REQUEST ;
@@ -267,7 +268,9 @@ InvalidMultiSearchRemote                       , InvalidRequest       , BAD_REQU
 InvalidMultiSearchWeight                       , InvalidRequest       , BAD_REQUEST ;
 InvalidNetworkRemotes                          , InvalidRequest       , BAD_REQUEST ;
 InvalidNetworkSelf                             , InvalidRequest       , BAD_REQUEST ;
+InvalidNetworkSharding                         , InvalidRequest       , BAD_REQUEST ;
 InvalidNetworkSearchApiKey                     , InvalidRequest       , BAD_REQUEST ;
+InvalidNetworkWriteApiKey                      , InvalidRequest       , BAD_REQUEST ;
 InvalidNetworkUrl                              , InvalidRequest       , BAD_REQUEST ;
 InvalidSearchAttributesToSearchOn              , InvalidRequest       , BAD_REQUEST ;
 InvalidSearchAttributesToCrop                  , InvalidRequest       , BAD_REQUEST ;
@@ -335,6 +338,7 @@ InvalidState                                   , Internal             , INTERNAL
 InvalidStoreFile                               , Internal             , INTERNAL_SERVER_ERROR ;
 InvalidSwapDuplicateIndexFound                 , InvalidRequest       , BAD_REQUEST ;
 InvalidSwapIndexes                             , InvalidRequest       , BAD_REQUEST ;
+InvalidSwapRename                              , InvalidRequest       , BAD_REQUEST ;
 InvalidTaskAfterEnqueuedAt                     , InvalidRequest       , BAD_REQUEST ;
 InvalidTaskAfterFinishedAt                     , InvalidRequest       , BAD_REQUEST ;
 InvalidTaskAfterStartedAt                      , InvalidRequest       , BAD_REQUEST ;
