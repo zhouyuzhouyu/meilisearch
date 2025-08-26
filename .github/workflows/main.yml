@@ -1,0 +1,52 @@
+name: Manual Build Linux x86_64
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: '要构建的分支'
+        required: true
+        default: '1.19'
+
+jobs:
+  build-linux-x86_64:
+    name: 编译 Linux x86_64 二进制
+    runs-on: rockylinux:9
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          repository: meilisearch/meilisearch
+          ref: ${{ inputs.branch }}
+
+      - name: 安装基础依赖
+        run: |
+          sudo dnf install -y curl git build-essential cmake3
+          sudo ln -s /usr/bin/cmake3 /usr/bin/cmake
+      - name: 配置 Rust 工具链
+        uses: dtolnay/rust-toolchain@1.85
+        with:
+          toolchain: stable
+          override: true
+
+      - name: 设置交叉编译环境
+        run: |
+          echo '[target.x86_64-unknown-linux-gnu]' >> ~/.cargo/config
+          echo 'linker = "gcc"' >> ~/.cargo/config
+      - name: 编译发布版
+        run: cargo build --release --locked
+
+      - name: 保存构建产物
+        uses: actions/upload-artifact@v3
+        with:
+          name: meilisearch-linux-x86_64
+          path: target/release/meilisearch
+
+      - name: 上传到 Release（可选）
+        if: github.event_name == 'release'
+        uses: svenstaro/upload-release-action@2.11.2
+        with:
+          repo_token: ${{ secrets.MEILI_BOT_GH_PAT }}
+          file: target/release/meilisearch
+          asset_name: meilisearch-linux-x86_64
+          tag: ${{ github.ref }}
